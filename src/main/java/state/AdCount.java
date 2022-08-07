@@ -36,6 +36,11 @@ public class AdCount {
             }
         });
 
+        keyedStream.sum(1);
+        keyedStream.sum(1);
+        keyedStream.sum(1);
+        keyedStream.sum(1);
+
         keyedStream.map(new AdCountFunction()).print();
 
         env.execute("adCount");
