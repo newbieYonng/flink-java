@@ -116,7 +116,17 @@ under the License.
 		<dependency>
 			<groupId>org.apache.bahir</groupId>
 			<artifactId>flink-connector-redis_${scala.binary.version}</artifactId>
-			<version>1.1-SNAPSHOT</version>
+			<version>1.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-connector-jdbc_${scala.binary.version}</artifactId>
+			<version>1.13.2</version>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>8.0.16</version>
 		</dependency>
 
 		<!-- Add connector dependencies here. They must be in the default scope (compile). -->
