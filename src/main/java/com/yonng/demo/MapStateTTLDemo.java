@@ -66,8 +66,8 @@ public class MapStateTTLDemo {
                 history = 0.0;
             current += history;
             mapState.put(currentTime, current);
-            Iterator<Map.Entry<String, Double>> iterator = mapState.entries().iterator();
-            /*while (iterator.hasNext()) {
+            /*Iterator<Map.Entry<String, Double>> iterator = mapState.entries().iterator();
+            while (iterator.hasNext()) {
                 Map.Entry<String, Double> entry = iterator.next();
                 out.collect(Tuple3.of(ctx.getCurrentKey(), entry.getKey(), entry.getValue()));
             }*/
