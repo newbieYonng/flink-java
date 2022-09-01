@@ -33,7 +33,7 @@ public class Kafka2Kafka {
         props.setProperty("bootstrap.servers", "yonng01:9092,yonng02:9092,yonng03:9092");
         props.setProperty("group.id", "test02");
         props.setProperty("auto.offset.reset", "latest");
-        props.setProperty("transaction.timeout.ms", "600000");
+        props.setProperty("transaction.timeout.ms", "60000");
         FlinkKafkaConsumer<String> flinkKafkaConsumer = new FlinkKafkaConsumer<>(
                 "wc",
                 new SimpleStringSchema(),
@@ -43,7 +43,7 @@ public class Kafka2Kafka {
         //spark hadoop flink flink
         DataStreamSource<String> source = env.addSource(flinkKafkaConsumer);
 
-        DataStreamSource<String> errorSource = env.socketTextStream("yonng02", 8888);
+        DataStreamSource<String> errorSource = env.socketTextStream("yonng03", 8888);
         DataStream<String> unionStream = errorSource.map(new MapFunction<String, String>() {
             @Override
             public String map(String value) throws Exception {
