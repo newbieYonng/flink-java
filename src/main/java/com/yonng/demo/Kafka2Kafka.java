@@ -1,9 +1,9 @@
 package com.yonng.demo;
 
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.runtime.state.filesystem.FsStateBackend;
+import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
@@ -23,21 +23,24 @@ public class Kafka2Kafka {
     public static void main(String[] args) throws Exception {
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.enableCheckpointing(60000);
+        env.enableCheckpointing(30000);
         //将stateBackend保存到HDFS,默认在JobManager中
-        env.setStateBackend(new FsStateBackend("file:///D:\\Develop\\Coding\\IDEA\\flink-java\\data\\backend"));
+        //env.setStateBackend(new FsStateBackend("file:///D:\\Develop\\Coding\\IDEA\\flink-java\\data\\backend"));
+        env.getCheckpointConfig().setCheckpointStorage("file:///D:\\Develop\\Coding\\IDEA\\flink-java\\data\\backend");
+        //env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
         //任务cancel保留外部存储checkpoint
-        env.getCheckpointConfig().enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
+        //env.getCheckpointConfig().setExternalizedCheckpointCleanup(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
 
-        Properties props = new Properties();
-        props.setProperty("bootstrap.servers", "yonng01:9092,yonng02:9092,yonng03:9092");
-        props.setProperty("group.id", "test02");
-        props.setProperty("auto.offset.reset", "latest");
-        props.setProperty("transaction.timeout.ms", "60000");
+        Properties propsConsumer = new Properties();
+        propsConsumer.setProperty("bootstrap.servers", "yonng01:9092,yonng02:9092,yonng03:9092");
+        propsConsumer.setProperty("group.id", "test02");
+        propsConsumer.setProperty("auto.offset.reset", "latest");
+        propsConsumer.setProperty("isolation.level", "read_committed");
+        propsConsumer.setProperty("enable.auto.commit", "false");
         FlinkKafkaConsumer<String> flinkKafkaConsumer = new FlinkKafkaConsumer<>(
                 "wc",
                 new SimpleStringSchema(),
-                props);
+                propsConsumer);
         //不将偏移量写入kafka的topic中
         flinkKafkaConsumer.setCommitOffsetsOnCheckpoints(false);
         //spark hadoop flink flink
@@ -55,6 +58,14 @@ public class Kafka2Kafka {
 
         SingleOutputStreamOperator<String> filtered = unionStream.filter(e -> !e.startsWith("error"));
 
+        Properties propsProducer = new Properties();
+        propsProducer.setProperty("bootstrap.servers", "yonng01:9092,yonng02:9092,yonng03:9092");
+        propsProducer.setProperty("group.id", "test03");
+        propsProducer.setProperty("auto.offset.reset", "latest");
+        propsProducer.setProperty("transaction.timeout.ms", "60000");
+        propsProducer.setProperty("transactional.id", "1");
+
+
         KafkaSerializationSchema<String> serializationSchema = new KafkaSerializationSchema<String>() {
             @Override
             public ProducerRecord<byte[], byte[]> serialize(String element, @Nullable Long timestamp) {
@@ -67,7 +78,7 @@ public class Kafka2Kafka {
         FlinkKafkaProducer<String> myProducer = new FlinkKafkaProducer<>(
                 "my-topic",             // target topic
                 serializationSchema,    // serialization schema
-                props,             // producer config
+                propsProducer,             // producer config
                 FlinkKafkaProducer.Semantic.EXACTLY_ONCE); // fault-tolerance
 
         filtered.addSink(myProducer);
