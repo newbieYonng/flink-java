@@ -34,7 +34,7 @@ public class Kafka2Kafka {
         Properties propsConsumer = new Properties();
         propsConsumer.setProperty("bootstrap.servers", "yonng01:9092,yonng02:9092,yonng03:9092");
         propsConsumer.setProperty("group.id", "test02");
-        propsConsumer.setProperty("auto.offset.reset", "latest");
+        propsConsumer.setProperty("auto.offset.reset", "earliest");
         propsConsumer.setProperty("isolation.level", "read_committed");
         propsConsumer.setProperty("enable.auto.commit", "false");
         FlinkKafkaConsumer<String> flinkKafkaConsumer = new FlinkKafkaConsumer<>(
@@ -45,6 +45,8 @@ public class Kafka2Kafka {
         flinkKafkaConsumer.setCommitOffsetsOnCheckpoints(false);
         //spark hadoop flink flink
         DataStreamSource<String> source = env.addSource(flinkKafkaConsumer);
+
+        source.print();
 
         DataStreamSource<String> errorSource = env.socketTextStream("yonng03", 8888);
         DataStream<String> unionStream = errorSource.map(new MapFunction<String, String>() {
@@ -61,10 +63,7 @@ public class Kafka2Kafka {
         Properties propsProducer = new Properties();
         propsProducer.setProperty("bootstrap.servers", "yonng01:9092,yonng02:9092,yonng03:9092");
         propsProducer.setProperty("group.id", "test03");
-        propsProducer.setProperty("auto.offset.reset", "latest");
         propsProducer.setProperty("transaction.timeout.ms", "60000");
-        propsProducer.setProperty("transactional.id", "1");
-
 
         KafkaSerializationSchema<String> serializationSchema = new KafkaSerializationSchema<String>() {
             @Override

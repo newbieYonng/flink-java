@@ -11,7 +11,7 @@ public class WordCount {
 
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        DataStreamSource<String> source = env.socketTextStream("yonng02", 8888);
+        DataStreamSource<String> source = env.socketTextStream("yonng02", Integer.parseInt(args[0]));
 
         SingleOutputStreamOperator<Tuple2<String, Integer>> wordAndNum = source.flatMap((String line, Collector<Tuple2<String, Integer>> out) -> {
             String[] words = line.split(",");
