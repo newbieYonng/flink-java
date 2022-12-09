@@ -23,19 +23,16 @@ public class Kafka2Kafka {
     public static void main(String[] args) throws Exception {
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.enableCheckpointing(30000);
+        env.enableCheckpointing(60000);
         //将stateBackend保存到HDFS,默认在JobManager中
-        //env.setStateBackend(new FsStateBackend("file:///D:\\Develop\\Coding\\IDEA\\flink-java\\data\\backend"));
-        env.getCheckpointConfig().setCheckpointStorage("file:///D:\\Develop\\Coding\\IDEA\\flink-java\\data\\backend");
-        //env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
-        //任务cancel保留外部存储checkpoint
-        //env.getCheckpointConfig().setExternalizedCheckpointCleanup(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
+        env.getCheckpointConfig().setCheckpointStorage("hdfs:///data/checkpoint");
+        env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
 
         Properties propsConsumer = new Properties();
         propsConsumer.setProperty("bootstrap.servers", "yonng01:9092,yonng02:9092,yonng03:9092");
-        propsConsumer.setProperty("group.id", "test02");
-        propsConsumer.setProperty("auto.offset.reset", "earliest");
-        propsConsumer.setProperty("isolation.level", "read_committed");
+        propsConsumer.setProperty("group.id", "wc01");
+        propsConsumer.setProperty("auto.offset.reset", "latest");
+        //是否将偏移量提交到__consumer_offsets这个topic中，默认true
         propsConsumer.setProperty("enable.auto.commit", "false");
         FlinkKafkaConsumer<String> flinkKafkaConsumer = new FlinkKafkaConsumer<>(
                 "wc",
@@ -62,20 +59,19 @@ public class Kafka2Kafka {
 
         Properties propsProducer = new Properties();
         propsProducer.setProperty("bootstrap.servers", "yonng01:9092,yonng02:9092,yonng03:9092");
-        propsProducer.setProperty("group.id", "test03");
         propsProducer.setProperty("transaction.timeout.ms", "60000");
 
         KafkaSerializationSchema<String> serializationSchema = new KafkaSerializationSchema<String>() {
             @Override
             public ProducerRecord<byte[], byte[]> serialize(String element, @Nullable Long timestamp) {
                 return new ProducerRecord<>(
-                        "my-topic", // target topic
+                        "my-topic2", // target topic
                         element.getBytes(StandardCharsets.UTF_8)); // record contents
             }
         };
 
         FlinkKafkaProducer<String> myProducer = new FlinkKafkaProducer<>(
-                "my-topic",             // target topic
+                "my-topic2",             // target topic
                 serializationSchema,    // serialization schema
                 propsProducer,             // producer config
                 FlinkKafkaProducer.Semantic.EXACTLY_ONCE); // fault-tolerance

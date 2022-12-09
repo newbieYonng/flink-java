@@ -23,10 +23,11 @@ public class KafkaSourceDemo {
 
         KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
                 .setBootstrapServers("yonng01:9092,yonng02:9092,yonng03:9092")
-                .setTopics("tpc01")
+                .setTopics("my-topic2")
                 .setGroupId("test01")
                 .setStartingOffsets(OffsetsInitializer.earliest())
                 .setValueOnlyDeserializer(new SimpleStringSchema())
+                .setProperty("isolation.level", "read_committed")
                 .build();
 
         DataStreamSource<String> source = env.fromSource(kafkaSource, WatermarkStrategy.noWatermarks(), "kafka source");

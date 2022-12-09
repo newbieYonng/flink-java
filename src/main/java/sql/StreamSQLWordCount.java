@@ -14,7 +14,6 @@ import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
 
 import static org.apache.flink.table.api.Expressions.$;
-import static org.apache.flink.table.api.Expressions.e;
 
 public class StreamSQLWordCount {
 
@@ -40,10 +39,13 @@ public class StreamSQLWordCount {
         Table table1 = table.groupBy($("id")).select($("id"), $("cnt").sum().as("cnt"));
         DataStream<Tuple2<Boolean, Tuple2<String, Integer>>> res = tableEnv.toRetractStream(table1, TypeInformation.of(new TypeHint<Tuple2<String, Integer>>() {}));
 
+        DataStream<Tuple2<String, Integer>> tuple2DataStream = tableEnv.toAppendStream(table1, TypeInformation.of(new TypeHint<Tuple2<String, Integer>>() {}));
+        DataStream<Row> rowDataStream = tableEnv.toDataStream(table1);
+        tableEnv.toChangelogStream(table);
+
         //SQL
-        /*tableEnv.createTemporaryView("stu", tpStream, $("id"), $("cnt"));
-        Table table = tableEnv.sqlQuery("select id, sum(cnt) as cnt from stu group by id");
-        DataStream<Tuple2<Boolean, Row>> res = tableEnv.toRetractStream(table, Row.class);*/
+        //tableEnv.createTemporaryView("stu", tpStream, $("id"), $("cnt"));
+        //TableResult res = tableEnv.executeSql("select id, sum(cnt) as cnt from stu group by id");
 
         res.print();
 

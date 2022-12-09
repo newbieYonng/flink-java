@@ -52,10 +52,12 @@ public class EventTimeWindow {
         //滚动窗口TUMBLE tumble_start(etime, interval '10' seconds) as win_start
         //Table table = tableEnv.sqlQuery("select uid, sum(money) as tolMoney from orders group by TUMBLE(etime, INTERVAL '10' SECONDS), uid");
         //滑动窗口HOP
-        Table table = tableEnv.sqlQuery("select uid, sum(money) as tolMoney from orders group by hop(etime, interval '2' seconds, INTERVAL '10' SECONDS), uid");
+        //Table table = tableEnv.sqlQuery("select uid, sum(money) as tolMoney from orders group by hop(etime, interval '2' seconds, INTERVAL '10' SECONDS), uid");
+        //会话session窗口CUMULATE
+        Table table = tableEnv.sqlQuery("select uid, sum(money) as tolMoney from table(cumulate(table orders, DESCRIPTOR(etime), interval '2' seconds, INTERVAL '10' SECONDS)) group by window_start, window_end, uid");
 
-
-        DataStream<Tuple2<Boolean, Row>> res = tableEnv.toRetractStream(table, Row.class);
+        DataStream<Row> res = tableEnv.toDataStream(table, Row.class);
+        //DataStream<Tuple2<Boolean, Row>> res = tableEnv.toRetractStream(table, Row.class);
 
         res.print();
 
