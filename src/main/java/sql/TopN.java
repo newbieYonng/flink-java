@@ -6,6 +6,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 
 import static org.apache.flink.table.api.Expressions.$;
@@ -28,10 +29,20 @@ public class TopN {
 
         StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
 
-        tableEnv.createTemporaryView("v_log", tpStream, $("name"), $(""));
+        tableEnv.createTemporaryView("v_log", tpStream, $("c_name"), $("cnt"));
 
-        tableEnv.executeSql("desc v_log").print();
+        Table table = tableEnv.sqlQuery(
+                        "select " +
+                        " * " +
+                        "from (" +
+                        "   select " +
+                        "       *, " +
+                        "       row_number() over(partition by c_name order by cnt desc) as row_num " +
+                        "   from v_log" +
+                        ") " +
+                        "where row_num <= 2");
+        tableEnv.toChangelogStream(table).print();
 
-        //env.execute();
+        env.execute();
     }
 }

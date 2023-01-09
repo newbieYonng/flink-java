@@ -46,19 +46,19 @@ public class TimeAndWatermark_03 {
 
         StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
 
-        /*Schema schema = Schema.newBuilder()
+        Schema schema = Schema.newBuilder()
                 .columnByExpression("uid", $("f0"))
                 .columnByExpression("uname", $("f1"))
                 .columnByMetadata("e_time", DataTypes.TIMESTAMP(3), "rowtime")
                 .build();
 
-        tableEnv.createTemporaryView("v_log", tpStream, schema);*/
+        tableEnv.createTemporaryView("v_log", tpStream, schema);
 
-        tableEnv.createTemporaryView(
+        /*tableEnv.createTemporaryView(
                 "v_log",
                 tpStream,
                 $("uid"), $("uname"), $("e_time").rowtime()
-        );
+        );*/
 
         //滚动窗口老API
         /*tableEnv.executeSql(
