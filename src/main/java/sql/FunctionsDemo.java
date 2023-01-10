@@ -16,12 +16,15 @@ import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.functions.AggregateFunction;
 import org.apache.flink.table.functions.ScalarFunction;
+import org.apache.flink.table.functions.TableAggregateFunction;
 import org.apache.flink.table.functions.TableFunction;
 import org.apache.flink.types.Row;
+import org.apache.flink.util.Collector;
 
 import java.time.Duration;
 
 import static org.apache.flink.table.api.Expressions.$;
+import static org.apache.flink.table.api.Expressions.call;
 
 public class FunctionsDemo {
 
@@ -55,13 +58,13 @@ public class FunctionsDemo {
         tableEnv.createTemporaryView("eventTable", table1);
 
         /**
-         * 标量函数
+         * 标量函数--一对一
          */
         /*tableEnv.createTemporarySystemFunction("MyHash", MyHash.class);
         Table table = tableEnv.sqlQuery("select MyHash('222') as h2");*/
 
         /**
-         * 表函数
+         * 表函数--一对多
          */
         /*tableEnv.createTemporarySystemFunction("MySplit", new MySplit());
         Table table = tableEnv.sqlQuery("select " +
@@ -69,13 +72,23 @@ public class FunctionsDemo {
                 "from eventTable, lateral table(MySplit(url)) as T(a, b)");*/
 
         /**
-         * 聚合函数
+         * 聚合函数--多对一
          */
-        tableEnv.createTemporarySystemFunction("MyAvg", MyAvgFunction.class);
+        /*tableEnv.createTemporarySystemFunction("MyAvg", MyAvgFunction.class);
         Table table = tableEnv.sqlQuery("select " +
                 "user, MyAvg(url) as avg_age " +
                 "from eventTable " +
-                "group by user");
+                "group by user");*/
+
+        /**
+         * 表聚合函数--多对多
+         */
+        tableEnv.createTemporarySystemFunction("Top2", Top2.class);
+        Table table = tableEnv.from("eventTable")
+                //.groupBy($("user"))
+                .select($("user"), $("url"))
+                .flatAggregate(call("Top2", $("url")).as("value", "rank"))
+                .select($("user"), $("value"), $("rank"));
 
 
         tableEnv.toChangelogStream(table).print();
@@ -119,6 +132,29 @@ public class FunctionsDemo {
         public Tuple2<Double, Integer> createAccumulator() {
             return new Tuple2<>(0.0, 0);
         }
+    }
+
+    public static class Top2 extends TableAggregateFunction<Tuple2<Double, Integer>, Tuple2<Double, Double>> {
+
+        @Override
+        public Tuple2<Double, Double> createAccumulator() {
+            return Tuple2.of(Double.MIN_VALUE, Double.MIN_VALUE);
+        }
+
+        public void accumulate(Tuple2<Double, Double> acc, Double value) {
+            if (value > acc.f0) {
+                acc.f1 = acc.f0;
+                acc.f0 = value;
+            } else if (value > acc.f1) {
+                acc.f1 = value;
+            }
+        }
+
+        public void emitValue(Tuple2<Double, Double> acc, Collector<Tuple2<Double, Integer>> out) {
+            if (acc.f0 != Double.MIN_VALUE) out.collect(Tuple2.of(acc.f0, 1));
+            if (acc.f1 != Double.MIN_VALUE) out.collect(Tuple2.of(acc.f1, 2));
+        }
+        
     }
 
 
